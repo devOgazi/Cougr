@@ -1,0 +1,14 @@
+{
+  "name": "cougr-sdk-session",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Session-key authorization SDK for Cougr games on Stellar Soroban: SessionBuilder and SorobanAuthorizationEntry production",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "license": "MIT"
+}

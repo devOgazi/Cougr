@@ -1,18 +1,22 @@
 /**
- * sdk-core stub — models the interface described in issue #324 / PR #350.
+ * cougr-sdk-core
  *
- * This module will be replaced by `cougr-sdk-core` once PR #350 merges.
- * Every exported name here maps 1-to-1 to what that package commits to in its
- * own issue scope: `invoke`, `simulate`, `decodeMoveResult`, and
- * `decodeGameState`. No name is invented; if the real package spells something
- * differently, only this file changes.
+ * Core client for Cougr turn-based contracts on Stellar Soroban.
  *
- * The implementation is a fixture-backed mock so CI can run without a live
- * Soroban node. The real `cougr-sdk-core` performs actual RPC calls; the
- * shape is identical.
+ * Scope (issue #324 / PR #350):
+ *   - `TurnBasedClient` — simulate + submit + getState
+ *   - `decodeMoveResult` / `decodeGameState` — XDR return-value decoders
+ *   - Domain types: `GameState`, `MoveResult`, `SimulateResult`, `InvokeOptions`, `SdkCoreOptions`
+ *   - Fixture constants for CI: `FIXTURE_PLAYER_X`, `FIXTURE_PLAYER_O`,
+ *     `FIXTURE_INITIAL_STATE`, `FIXTURE_AFTER_MOVE_STATE`
+ *
+ * In production `TurnBasedClient` calls `simulateTransaction` → sign → submit
+ * against a live Soroban RPC endpoint. In fixture mode (pass `fixture = true`
+ * to the constructor) it returns pre-built fixtures so CI can run without a
+ * live node.
  */
 
-// ── Types exposed by sdk-core ──────────────────────────────────────────────
+// ── Domain types ──────────────────────────────────────────────────────────
 
 export interface GameState {
   cells: number[];          // 9 cells, 0=empty 1=X 2=O
@@ -59,18 +63,17 @@ export interface InvokeOptions {
   authEntries?: readonly string[];   // base64 XDR SorobanAuthorizationEntry
 }
 
-// ── Mock implementation ────────────────────────────────────────────────────
+// ── Client ─────────────────────────────────────────────────────────────────
 
 /**
- * Minimal mock that stands in for the real `cougr-sdk-core` package.
+ * Client for a deployed turn-based Cougr contract.
  *
- * In production the methods here call `simulateTransaction` → sign → submit.
- * In CI they return pre-built fixtures so no network is needed.
+ * sdk-core owns transport: simulate, sign, submit. It does not own keys or
+ * authorization entries — those are supplied by the caller (sdk-session for
+ * session-scoped calls, a wallet for direct calls).
  */
 export class TurnBasedClient {
   readonly #opts: SdkCoreOptions;
-
-  /** Fixture mode: set to `true` so CI skips actual RPC calls. */
   readonly #fixture: boolean;
 
   constructor(opts: SdkCoreOptions, fixture = false) {
@@ -79,8 +82,8 @@ export class TurnBasedClient {
   }
 
   /**
-   * Simulate `init_game(player_x, player_o)` and return the assembled XDR.
-   * sdk-core owns the simulation; the caller signs it and calls `submit`.
+   * Simulate `method(args)` against the contract and return the assembled XDR.
+   * The caller signs the XDR and passes it to `submit`.
    */
   async simulate(
     method: string,
@@ -90,29 +93,30 @@ export class TurnBasedClient {
     if (this.#fixture) {
       return mockSimulate(method, args, this.#opts.contractId);
     }
-    throw new Error('Real RPC not available in this stub; pass fixture=true for CI');
+    throw new Error(
+      'cougr-sdk-core: real RPC not yet implemented (PR #350 pending). ' +
+      'Pass fixture=true for CI or wait for #350 to merge.',
+    );
   }
 
   /**
    * Submit a pre-signed transaction XDR and return the resulting tx hash.
-   * The caller is responsible for obtaining auth entries (sdk-session for
-   * scoped calls, a wallet for direct calls).
    */
   async submit(_signedXdr: string): Promise<string> {
-    if (this.#fixture) {
-      return MOCK_TX_HASH;
-    }
-    throw new Error('Real RPC not available in this stub; pass fixture=true for CI');
+    if (this.#fixture) return MOCK_TX_HASH;
+    throw new Error(
+      'cougr-sdk-core: real RPC not yet implemented (PR #350 pending).',
+    );
   }
 
   /**
    * Read the current `GameState` via a simulation (no auth required).
    */
   async getState(_opts: Pick<InvokeOptions, 'signerAddress'>): Promise<GameState> {
-    if (this.#fixture) {
-      return structuredClone(FIXTURE_INITIAL_STATE);
-    }
-    throw new Error('Real RPC not available in this stub; pass fixture=true for CI');
+    if (this.#fixture) return structuredClone(FIXTURE_INITIAL_STATE);
+    throw new Error(
+      'cougr-sdk-core: real RPC not yet implemented (PR #350 pending).',
+    );
   }
 }
 
@@ -122,9 +126,8 @@ export class TurnBasedClient {
  * Decode a `MoveResult` from the XDR return-value produced by a successful
  * `make_move` simulation or invocation.
  *
- * The real implementation calls `scValToNative` on a Soroban `ScVal`; the mock
- * accepts the native JS shape directly so the test harness can drive it
- * without touching XDR.
+ * The real implementation calls `scValToNative` on a Soroban `ScVal`; the
+ * fixture-backed build accepts the native JS shape directly.
  */
 export function decodeMoveResult(raw: unknown): MoveResult {
   if (
@@ -154,7 +157,7 @@ export function decodeGameState(raw: unknown): GameState {
   throw new TypeError('decodeGameState: unexpected shape');
 }
 
-// ── Internal fixtures ──────────────────────────────────────────────────────
+// ── Fixture constants ─────────────────────────────────────────────────────
 
 const MOCK_TX_HASH =
   'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890';
@@ -181,6 +184,8 @@ export const FIXTURE_AFTER_MOVE_STATE: GameState = {
   move_count: 1,
   status: 0,
 };
+
+// ── Internal ───────────────────────────────────────────────────────────────
 
 function mockSimulate(
   method: string,

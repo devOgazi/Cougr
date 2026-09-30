@@ -11,7 +11,7 @@
  * no wallet and no UI; its only job is to prove the three packages compose.
  *
  * Run it:
- *   node src/quickstart.ts          (fixture / mock-RPC mode, no testnet needed)
+ *   FIXTURE_MODE=true node src/quickstart.ts
  *
  * Architecture:
  *   1. sdk-core simulates `init_game` and returns the initial GameState.
@@ -40,20 +40,18 @@ import {
   serializeCursor,
 } from 'cougr-sdk-events';
 
-// sdk-core stub (replace with `import ... from 'cougr-sdk-core'` after #350 merges)
 import {
   TurnBasedClient,
   decodeMoveResult,
   FIXTURE_PLAYER_X,
   FIXTURE_PLAYER_O,
-} from './sdk-core-stub.ts';
+} from 'cougr-sdk-core';
 
-// sdk-session stub (replace with `import ... from 'cougr-sdk-session'` after #351 merges)
 import {
   SessionBuilder,
   buildSessionAuth,
   FIXTURE_SESSION_SEED,
-} from './sdk-session-stub.ts';
+} from 'cougr-sdk-session';
 
 import {
   applyUpdatesToGameState,
@@ -68,7 +66,7 @@ import {
   FIXTURE_START_LEDGER,
 } from './mock-rpc.ts';
 
-import type { GameState } from './sdk-core-stub.ts';
+import type { GameState } from './game-state.ts';
 
 // ── Configuration ─────────────────────────────────────────────────────────
 

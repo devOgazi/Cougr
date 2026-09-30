@@ -7,7 +7,31 @@
  */
 
 import type { ComponentSetUpdate, CougrEventUpdate } from 'cougr-sdk-events';
-import type { GameState } from './sdk-core-stub.ts';
+
+// ── Domain types (mirror what cougr-sdk-core exports) ────────────────────
+
+/**
+ * The on-chain game state for a tic-tac-toe turn-based game.
+ * Mirrors the `GameState` type exported by `cougr-sdk-core`.
+ */
+export interface GameState {
+  cells: number[];        // 9 cells, 0=empty 1=X 2=O
+  player_x: string;       // Stellar address
+  player_o: string;       // Stellar address
+  is_x_turn: boolean;
+  move_count: number;
+  status: number;         // 0=in_progress 1=x_wins 2=o_wins 3=draw
+}
+
+/**
+ * The return value of a `make_move` contract invocation.
+ * Mirrors the `MoveResult` type exported by `cougr-sdk-core`.
+ */
+export interface MoveResult {
+  success: boolean;
+  game_state: GameState;
+  message: string;        // "ok" | "gameover" | "bounds" | "occupied" | "notturn" | "notplay"
+}
 
 // ── Component names (must match Rust impl_component! / impl_rich_component!) ─
 

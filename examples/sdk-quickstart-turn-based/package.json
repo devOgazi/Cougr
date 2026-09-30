@@ -10,7 +10,9 @@
     "start": "node src/quickstart.ts"
   },
   "dependencies": {
-    "cougr-sdk-events": "file:../../packages/sdk-events"
+    "cougr-sdk-core": "file:../../packages/sdk-core",
+    "cougr-sdk-events": "file:../../packages/sdk-events",
+    "cougr-sdk-session": "file:../../packages/sdk-session"
   },
   "devDependencies": {
     "@types/node": "^24.7.0",

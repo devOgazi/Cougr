@@ -2,9 +2,9 @@
  * Integration test for the turn-based SDK quickstart.
  *
  * Exercises the three-package composition in fixture mode:
- *   - sdk-core stub: invoke/simulate/decode
- *   - sdk-session stub: SessionBuilder + buildSessionAuth
- *   - sdk-events (real package): decodeCougrEvent, pageCougrEvents, resolveRichComponentUpdate
+ *   - cougr-sdk-core: TurnBasedClient + decodeMoveResult + decodeGameState
+ *   - cougr-sdk-session: SessionBuilder + buildSessionAuth
+ *   - cougr-sdk-events (real package): decodeCougrEvent, pageCougrEvents, resolveRichComponentUpdate
  *
  * CI entry point: `node --test test/*.test.ts`
  */
@@ -25,7 +25,7 @@ import {
   buildCougrTopicFilters,
 } from 'cougr-sdk-events';
 
-// sdk-core stub
+// sdk-core — real package (fixture mode for CI)
 import {
   TurnBasedClient,
   decodeMoveResult,
@@ -34,14 +34,14 @@ import {
   FIXTURE_PLAYER_O,
   FIXTURE_INITIAL_STATE,
   FIXTURE_AFTER_MOVE_STATE,
-} from '../src/sdk-core-stub.ts';
+} from 'cougr-sdk-core';
 
-// sdk-session stub
+// sdk-session — real package (fixture mode for CI)
 import {
   SessionBuilder,
   buildSessionAuth,
   FIXTURE_SESSION_SEED,
-} from '../src/sdk-session-stub.ts';
+} from 'cougr-sdk-session';
 
 // game-state helpers
 import {
@@ -63,7 +63,7 @@ import {
   FIXTURE_DATA,
 } from '../src/mock-rpc.ts';
 
-import type { GameState } from '../src/sdk-core-stub.ts';
+import type { GameState } from '../src/game-state.ts';
 import type { ComponentSetUpdate } from 'cougr-sdk-events';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -83,7 +83,7 @@ function makeClient(): TurnBasedClient {
 
 // ── sdk-core tests ────────────────────────────────────────────────────────
 
-describe('sdk-core stub', () => {
+describe('sdk-core', () => {
   it('getState returns the fixture initial GameState', async () => {
     const client = makeClient();
     const state = await client.getState({ signerAddress: FIXTURE_PLAYER_X });
@@ -136,7 +136,7 @@ describe('sdk-core stub', () => {
 
 // ── sdk-session tests ─────────────────────────────────────────────────────
 
-describe('sdk-session stub', () => {
+describe('sdk-session', () => {
   it('SessionBuilder produces a valid SessionPolicy', () => {
     const policy = new SessionBuilder(FIXTURE_PLAYER_X)
       .withSeed(FIXTURE_SESSION_SEED)

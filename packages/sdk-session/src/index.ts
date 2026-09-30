@@ -1,21 +1,26 @@
 /**
- * sdk-session stub — models the interface described in issue #325 / PR #351.
+ * cougr-sdk-session
  *
- * This module will be replaced by `cougr-sdk-session` once PR #351 merges.
- * Exported names match those the issue commits to: `SessionBuilder`,
- * `buildSessionAuth`, and the `SessionPolicy` / `SessionAuthEntries` types.
+ * Session-key authorization for Cougr games on Stellar Soroban.
+ *
+ * Scope (issue #325 / PR #351):
+ *   - `SessionBuilder` — fluent builder that produces a `SessionPolicy`
+ *   - `buildSessionAuth` — signs an invocation with the session keypair and
+ *     returns base64-encoded `SorobanAuthorizationEntry` XDR blobs
+ *   - Types: `SessionPolicy`, `SessionScope`, `SessionAuthEntries`, `AuthEntryXdr`
+ *   - Fixture constant for CI: `FIXTURE_SESSION_SEED`
  *
  * sdk-session owns the signer: it takes a player-approved ephemeral keypair
  * and produces the `SorobanAuthorizationEntry` XDR that sdk-core attaches to
- * the assembled transaction. The player's main wallet never signs individual
- * moves; it approves the session once.
+ * the assembled transaction. The player's main wallet approves the session once;
+ * subsequent moves are signed by the session keypair.
  *
- * In fixture mode the entries are opaque strings (the real implementation
- * encodes valid XDR). CI only checks that the composition wiring works; it
- * does not verify cryptographic correctness.
+ * In fixture mode (`buildSessionAuth(..., { fixture: true })`) the entries are
+ * opaque deterministic strings so CI can verify composition without real
+ * cryptography.
  */
 
-// ── Types exposed by sdk-session ──────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────
 
 /** An opaque base64-encoded `SorobanAuthorizationEntry` XDR blob. */
 export type AuthEntryXdr = string;
@@ -54,10 +59,9 @@ export interface SessionAuthEntries {
 /**
  * Fluent builder that produces a `SessionPolicy`.
  *
- * sdk-session owns the signer: `build()` returns a policy object and
- * `buildSessionAuth(policy, ...)` produces the auth entries. The separation
- * lets the same policy object be reused across multiple moves without
- * re-deriving keys.
+ * The same policy object can be reused across multiple moves without
+ * re-deriving keys. Call `buildSessionAuth(policy, ...)` once per invocation
+ * to produce fresh auth entries.
  */
 export class SessionBuilder {
   #playerAddress: string;
@@ -108,12 +112,12 @@ export class SessionBuilder {
  *
  * In production this function:
  *  1. Derives the session keypair from `policy.sessionKeySeed`.
- *  2. Builds a `SorobanAuthorizedInvocation` targeting `contractId` /
- *     `functionName`.
+ *  2. Builds a `SorobanAuthorizedInvocation` targeting `contractId` / `functionName`.
  *  3. Signs it with the session keypair and encodes it as base64 XDR.
  *
- * In fixture mode it returns deterministic opaque strings so CI tests can
- * assert the composition without needing real cryptography.
+ * In fixture mode (`options.fixture = true`) it returns deterministic opaque
+ * strings so CI tests can assert the composition without needing real
+ * cryptography.
  */
 export function buildSessionAuth(
   policy: SessionPolicy,
@@ -147,7 +151,6 @@ export function buildSessionAuth(
   }
 
   if (fixture) {
-    // Return a deterministic stub entry for CI.
     const entry = btoa(
       `session:${policy.playerAddress}:${contractId}:${functionName}:${policy.expiryLedger}`,
     );
@@ -158,17 +161,16 @@ export function buildSessionAuth(
     };
   }
 
-  // Real implementation would call stellar-sdk here.
+  // Real implementation calls stellar-sdk here (PR #351).
   throw new Error(
-    'buildSessionAuth: real XDR signing not available in stub; pass fixture:true for CI',
+    'buildSessionAuth: real XDR signing not yet implemented (PR #351 pending). ' +
+    'Pass fixture: true for CI.',
   );
 }
 
-// ── Internal helpers ──────────────────────────────────────────────────────
+// ── Internal ───────────────────────────────────────────────────────────────
 
 function generateEphemeralSeed(): string {
-  // In production: crypto.getRandomValues or libsodium key generation.
-  // In this stub: a deterministic placeholder.
   return 'ephemeral-seed-placeholder-' + Date.now().toString(16);
 }
 
