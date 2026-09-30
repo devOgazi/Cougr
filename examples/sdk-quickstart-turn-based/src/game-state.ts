@@ -8,11 +8,13 @@
 
 import type { ComponentSetUpdate, CougrEventUpdate } from 'cougr-sdk-events';
 
-// ── Domain types (mirror what cougr-sdk-core exports) ────────────────────
+// ── Domain types ──────────────────────────────────────────────────────────
 
 /**
  * The on-chain game state for a tic-tac-toe turn-based game.
- * Mirrors the `GameState` type exported by `cougr-sdk-core`.
+ *
+ * Will align with the `GameState` type exported by `cougr-sdk-core` once
+ * PR #350 lands.  Until then these types are standalone here and in stubs.ts.
  */
 export interface GameState {
   cells: number[];        // 9 cells, 0=empty 1=X 2=O
@@ -25,7 +27,9 @@ export interface GameState {
 
 /**
  * The return value of a `make_move` contract invocation.
- * Mirrors the `MoveResult` type exported by `cougr-sdk-core`.
+ *
+ * Will align with the `MoveResult` type exported by `cougr-sdk-core` once
+ * PR #350 lands.
  */
 export interface MoveResult {
   success: boolean;

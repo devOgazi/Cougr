@@ -2,9 +2,12 @@
  * Integration test for the turn-based SDK quickstart.
  *
  * Exercises the three-package composition in fixture mode:
- *   - cougr-sdk-core: TurnBasedClient + decodeMoveResult + decodeGameState
- *   - cougr-sdk-session: SessionBuilder + buildSessionAuth
+ *   - sdk-core (stub in ./stubs.ts): TurnBasedClient + decodeMoveResult + decodeGameState
+ *   - sdk-session (stub in ./stubs.ts): SessionBuilder + buildSessionAuth
  *   - cougr-sdk-events (real package): decodeCougrEvent, pageCougrEvents, resolveRichComponentUpdate
+ *
+ * When cougr-sdk-core (#350) and cougr-sdk-session (#351) land on main,
+ * replace the stubs import with the real package imports and delete stubs.ts.
  *
  * CI entry point: `node --test test/*.test.ts`
  */
@@ -25,7 +28,7 @@ import {
   buildCougrTopicFilters,
 } from 'cougr-sdk-events';
 
-// sdk-core — real package (fixture mode for CI)
+// sdk-core + sdk-session — local stubs (replace with real packages after #350 / #351 land)
 import {
   TurnBasedClient,
   decodeMoveResult,
@@ -34,14 +37,10 @@ import {
   FIXTURE_PLAYER_O,
   FIXTURE_INITIAL_STATE,
   FIXTURE_AFTER_MOVE_STATE,
-} from 'cougr-sdk-core';
-
-// sdk-session — real package (fixture mode for CI)
-import {
   SessionBuilder,
   buildSessionAuth,
   FIXTURE_SESSION_SEED,
-} from 'cougr-sdk-session';
+} from '../src/stubs.ts';
 
 // game-state helpers
 import {
@@ -81,9 +80,9 @@ function makeClient(): TurnBasedClient {
   );
 }
 
-// ── sdk-core tests ────────────────────────────────────────────────────────
+// ── sdk-core stub tests ───────────────────────────────────────────────────
 
-describe('sdk-core', () => {
+describe('sdk-core (stub)', () => {
   it('getState returns the fixture initial GameState', async () => {
     const client = makeClient();
     const state = await client.getState({ signerAddress: FIXTURE_PLAYER_X });
@@ -132,11 +131,18 @@ describe('sdk-core', () => {
     assert.throws(() => decodeGameState(null), /decodeGameState/);
     assert.throws(() => decodeGameState({ noFields: true }), /decodeGameState/);
   });
+
+  it('FIXTURE_INITIAL_STATE and FIXTURE_AFTER_MOVE_STATE have expected shapes', () => {
+    assert.equal(FIXTURE_INITIAL_STATE.move_count, 0);
+    assert.ok(FIXTURE_INITIAL_STATE.cells.every((c) => c === 0));
+    assert.equal(FIXTURE_AFTER_MOVE_STATE.move_count, 1);
+    assert.equal(FIXTURE_AFTER_MOVE_STATE.cells[0], 1);
+  });
 });
 
-// ── sdk-session tests ─────────────────────────────────────────────────────
+// ── sdk-session stub tests ────────────────────────────────────────────────
 
-describe('sdk-session', () => {
+describe('sdk-session (stub)', () => {
   it('SessionBuilder produces a valid SessionPolicy', () => {
     const policy = new SessionBuilder(FIXTURE_PLAYER_X)
       .withSeed(FIXTURE_SESSION_SEED)
@@ -424,16 +430,16 @@ describe('game-state: renderBoard', () => {
 
 // ── End-to-end composition test ───────────────────────────────────────────
 
-describe('end-to-end: three-package composition', () => {
-  it('sdk-core + sdk-session + sdk-events compose without a live node', async () => {
-    // 1. sdk-core
+describe('end-to-end: three-package composition (sdk-core stub + sdk-session stub + sdk-events)', () => {
+  it('composes without a live node', async () => {
+    // 1. sdk-core (stub)
     const client = makeClient();
     const simResult = await client.simulate('init_game', [FIXTURE_PLAYER_X, FIXTURE_PLAYER_O], {
       signerAddress: FIXTURE_PLAYER_X,
     });
     let gameState = await client.getState({ signerAddress: FIXTURE_PLAYER_X });
 
-    // 2. sdk-session
+    // 2. sdk-session (stub)
     const sessionPolicy = new SessionBuilder(FIXTURE_PLAYER_X)
       .withSeed(FIXTURE_SESSION_SEED)
       .withScope({ contractIds: [CONTRACT_ID], functionNames: ['make_move'] })
@@ -448,7 +454,7 @@ describe('end-to-end: three-package composition', () => {
     });
     assert.ok(sessionAuth.entries.length > 0, 'session auth entries present');
 
-    // 3. sdk-core makes the move with session auth
+    // 3. sdk-core (stub) makes the move with session auth
     const moveSim = await client.simulate('make_move', [FIXTURE_PLAYER_X, 0], {
       signerAddress: FIXTURE_PLAYER_X,
       authEntries: sessionAuth.entries,
@@ -457,7 +463,7 @@ describe('end-to-end: three-package composition', () => {
     const moveResult = decodeMoveResult(moveSim.returnValue);
     assert.equal(moveResult.success, true);
 
-    // 4. sdk-events decodes the resulting events
+    // 4. sdk-events (real) decodes the resulting events
     const getEvents = makeMockRpc();
     const filter = cougrEventFilter({ contractIds: [CONTRACT_ID] });
     const gen = pageCougrEvents(getEvents, {
@@ -476,7 +482,6 @@ describe('end-to-end: three-package composition', () => {
     gameState = updatedState;
 
     // Assert TurnState was reconstructed from the event
-    // (the test fixture TurnState bytes decode to: isXTurn=false, moveCount=1)
     const turnStateUpdatesCount = page.updates.filter(
       (u) => u.family === 'set' && u.componentType === TURN_STATE_COMPONENT,
     ).length;

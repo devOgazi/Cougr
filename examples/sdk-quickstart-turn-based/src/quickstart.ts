@@ -3,9 +3,16 @@
  *
  * Demonstrates the three-package composition against the turn-based contract:
  *
- *   sdk-core  (#324 / PR #350) — simulate + submit + decode
- *   sdk-session (#325 / PR #351) — session-scoped authorization
+ *   sdk-core  (#324 / PR #350 pending) — simulate + submit + decode
+ *   sdk-session (#325 / PR #351 pending) — session-scoped authorization
  *   sdk-events (#327, merged) — COUGR event decode, no follow-up get_state poll
+ *
+ * Until PR #350 (cougr-sdk-core) and PR #351 (cougr-sdk-session) land on
+ * main, the sdk-core and sdk-session surfaces are provided by ./stubs.ts.
+ * When those PRs merge, replace the stubs import with:
+ *
+ *   import { TurnBasedClient, decodeMoveResult, ... } from 'cougr-sdk-core';
+ *   import { SessionBuilder, buildSessionAuth, ... } from 'cougr-sdk-session';
  *
  * This script is intentionally a Node.js script, not a browser app.  It has
  * no wallet and no UI; its only job is to prove the three packages compose.
@@ -40,18 +47,18 @@ import {
   serializeCursor,
 } from 'cougr-sdk-events';
 
+// TODO(#350, #351): replace with real package imports once those PRs land:
+//   import { TurnBasedClient, decodeMoveResult, FIXTURE_PLAYER_X, FIXTURE_PLAYER_O } from 'cougr-sdk-core';
+//   import { SessionBuilder, buildSessionAuth, FIXTURE_SESSION_SEED } from 'cougr-sdk-session';
 import {
   TurnBasedClient,
   decodeMoveResult,
   FIXTURE_PLAYER_X,
   FIXTURE_PLAYER_O,
-} from 'cougr-sdk-core';
-
-import {
   SessionBuilder,
   buildSessionAuth,
   FIXTURE_SESSION_SEED,
-} from 'cougr-sdk-session';
+} from './stubs.ts';
 
 import {
   applyUpdatesToGameState,
@@ -292,9 +299,10 @@ async function main(): Promise<void> {
   console.log(`  board:\n${renderBoard(gameState.cells).split('\n').map((l) => '    ' + l).join('\n')}`);
   console.log();
 
-  console.log('✓ sdk-core, sdk-session, and sdk-events composed successfully.');
+  console.log('✓ sdk-core (stub), sdk-session (stub), and sdk-events composed successfully.');
   console.log('  TurnState reconstructed from event bytes (no follow-up get_state poll).');
   console.log('  Board reconstructed via required rich-component follow-up read.');
+  console.log('  Replace stubs.ts imports with cougr-sdk-core + cougr-sdk-session once #350 and #351 land.');
 }
 
 /** Return the componentType of any CougrEventUpdate. */
